@@ -52,7 +52,7 @@
   </div>
 
   <script>
-    /* ---------- ????? ---------- */
+    /* ---------- 多语言字典 ---------- */
     const translations = {
       en: {
         title: "IP Lookup", loading: "Loading...",
@@ -62,22 +62,22 @@
         footer: "Powered by ipapi.co & CounterAPI"
       },
       zh: {
-        title: "IP ??", loading: "???...",
-        ip: "IP ??", city: "??", region: "??",
-        country: "??", org: "??? / ??",
-        visits: "?????",
-        footer: "???? ipapi.co & CounterAPI"
+        title: "IP 查询", loading: "加载中...",
+        ip: "IP 地址", city: "城市", region: "地区",
+        country: "国家", org: "运营商 / 机构",
+        visits: "访问总次数",
+        footer: "数据来自 ipapi.co & CounterAPI"
       }
     };
 
-    /* ---------- ???? ---------- */
+    /* ---------- 语言选择 ---------- */
     const lang = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
     const t = translations[lang];
     document.getElementById("title").textContent = t.title;
     document.getElementById("loading").textContent = t.loading;
     document.getElementById("footer-text").textContent = t.footer;
 
-    /* ---------- ?? IP ?? ---------- */
+    /* ---------- 获取 IP 信息 ---------- */
     async function fetchIPInfo() {
       try {
         const res = await fetch("https://ipapi.co/json/");
@@ -102,15 +102,15 @@
       document.getElementById("content").style.display = "";
     }
 
-    /* ---------- ???? (CounterAPI) ---------- */
+    /* ---------- 访客计数 (CounterAPI) ---------- */
     async function fetchVisits() {
-      const namespace = "example.com";   // TODO: ??????????
-      const key = "visits";             // TODO: ?????????
+      const namespace = "example.com";   // TODO: 替换成自己的命名空间
+      const key = "visits";             // TODO: 替换成自己的计数键
       const url = `https://api.counterapi.dev/v1/${namespace}/${key}/up`;
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error("counter api error");
-        const data = await res.json();   // ?? { count: 42, ... }
+        const data = await res.json();   // 形如 { count: 42, ... }
         document.getElementById("visits").textContent =
           `${t.visits}: ${data.count}`;
       } catch (e) {
@@ -120,7 +120,7 @@
       }
     }
 
-    /* ---------- ??? ---------- */
+    /* ---------- 初始化 ---------- */
     fetchIPInfo();
     fetchVisits();
   </script>
