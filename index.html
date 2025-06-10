@@ -1,46 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>IP Lookup</title>
   <style>
-    :root {
-      --bg: #f6f8fa;
-      --card-bg: #ffffff;
-      --primary: #006aff;
-      --text: #333;
-      --border: #e1e4e8;
+    :root{
+      --bg:#f6f8fa;--card:#fff;--primary:#006aff;
+      --text:#333;--border:#e1e4e8;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0;
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,
-        Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif; }
-    body {
-      background: var(--bg); color: var(--text);
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 1rem;
+    *{box-sizing:border-box;margin:0;padding:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,
+      Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif}
+    body{
+      background:var(--bg);color:var(--text);
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:1rem
     }
-    .card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.05);
-      max-width: 480px; width: 100%; padding: 2rem 2.5rem; text-align: center;
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.05);
+      max-width:480px;width:100%;padding:2rem 2.5rem;text-align:center
     }
-    h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 1rem; }
-    .info { text-align: left; margin: 1rem 0; line-height: 1.6; word-break: break-all; }
-    .info strong { width: 100px; display: inline-block; }
-    .visits { margin-top: 1.5rem; font-weight: bold; }
-    footer { margin-top: 2rem; font-size: .8rem; color: #777; }
-    @media (max-width: 480px) {
-      .card { padding: 1.5rem; }
-      h1 { font-size: 1.4rem; }
+    h1{color:var(--primary);font-size:1.8rem;margin-bottom:1rem}
+    .info{margin:1rem 0;text-align:left;line-height:1.6;word-break:break-all}
+    .info strong{display:inline-block;width:100px}
+    .visits{margin-top:1.5rem;font-weight:bold}
+    footer{margin-top:2rem;font-size:.8rem;color:#777}
+    @media(max-width:480px){
+      .card{padding:1.5rem}h1{font-size:1.4rem}
     }
   </style>
 </head>
 <body>
   <div class="card">
     <h1 id="title">IP Lookup</h1>
-
     <div id="loading">Loading...</div>
 
     <div id="content" style="display:none;">
@@ -48,81 +43,105 @@
       <div class="visits" id="visits"></div>
     </div>
 
-    <footer><span id="footer-text">Powered by ipapi.co &amp; CounterAPI</span></footer>
+    <footer><span id="footer-text">Powered by multiple IP APIs & CounterAPI</span></footer>
   </div>
 
   <script>
-    /* ---------- 多语言字典 ---------- */
-    const translations = {
-      en: {
-        title: "IP Lookup", loading: "Loading...",
-        ip: "IP", city: "City", region: "Region",
-        country: "Country", org: "ISP / Org",
-        visits: "Total visits",
-        footer: "Powered by ipapi.co & CounterAPI"
-      },
-      zh: {
-        title: "IP 查询", loading: "加载中...",
-        ip: "IP 地址", city: "城市", region: "地区",
-        country: "国家", org: "运营商 / 机构",
-        visits: "访问总次数",
-        footer: "数据来自 ipapi.co & CounterAPI"
-      }
-    };
+  /* ---------- 多语言 ---------- */
+  const i18n={
+    en:{title:"IP Lookup",loading:"Loading...",
+        ip:"IP",city:"City",region:"Region",country:"Country",
+        org:"ISP / Org",visits:"Total visits",
+        footer:"Powered by multiple IP APIs & CounterAPI",
+        err:"Failed to load IP info."},
+    zh:{title:"IP 查询",loading:"加载中...",
+        ip:"IP 地址",city:"城市",region:"地区",country:"国家",
+        org:"运营商 / 机构",visits:"访问总次数",
+        footer:"数据来自多家 IP API & CounterAPI",
+        err:"IP 信息获取失败"}
+  };
+  const lang=navigator.language.toLowerCase().startsWith("zh")?"zh":"en";
+  const t=i18n[lang];
+  ["title","loading","footer-text"].forEach(id=>{
+    document.getElementById(id).textContent=t[id.replace("-text","")]||t.loading;
+  });
 
-    /* ---------- 语言选择 ---------- */
-    const lang = navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
-    const t = translations[lang];
-    document.getElementById("title").textContent = t.title;
-    document.getElementById("loading").textContent = t.loading;
-    document.getElementById("footer-text").textContent = t.footer;
-
-    /* ---------- 获取 IP 信息 ---------- */
-    async function fetchIPInfo() {
-      try {
-        const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) throw new Error("ip api error");
-        const data = await res.json();
-        renderIPInfo(data);
-      } catch (e) {
-        document.getElementById("loading").textContent = "Failed to load IP info.";
-      }
-    }
-
-    function renderIPInfo(data) {
-      const infoEl = document.getElementById("ipInfo");
-      infoEl.innerHTML = `
-        <p><strong>${t.ip}:</strong> ${data.ip}</p>
-        <p><strong>${t.city}:</strong> ${data.city}</p>
-        <p><strong>${t.region}:</strong> ${data.region}</p>
-        <p><strong>${t.country}:</strong> ${data.country_name}</p>
-        <p><strong>${t.org}:</strong> ${data.org}</p>
-      `;
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("content").style.display = "";
-    }
-
-    /* ---------- 访客计数 (CounterAPI) ---------- */
-    async function fetchVisits() {
-      const namespace = "example.com";   // TODO: 替换成自己的命名空间
-      const key = "visits";             // TODO: 替换成自己的计数键
-      const url = `https://api.counterapi.dev/v1/${namespace}/${key}/up`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("counter api error");
-        const data = await res.json();   // 形如 { count: 42, ... }
-        document.getElementById("visits").textContent =
-          `${t.visits}: ${data.count}`;
-      } catch (e) {
-        console.error(e);
-        document.getElementById("visits").textContent =
-          `${t.visits}: N/A`;
-      }
-    }
-
-    /* ---------- 初始化 ---------- */
+  /* ---------- 本地缓存（5 分钟） ---------- */
+  const CACHE_KEY="ip_cache_v1";
+  const CACHE_TTL=5*60*1000; // 5min
+  const now=Date.now();
+  const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
+  if(cached && now-cached.time<CACHE_TTL){
+    renderIPInfo(cached.data);
+  }else{
     fetchIPInfo();
-    fetchVisits();
+  }
+
+  /* ---------- 获取 IP 信息，带多重源 ---------- */
+  async function fetchIPInfo(){
+    try{
+      const data=await tryFetchSequence([
+        {url:"https://ipapi.co/json/",map:d=>({
+          ip:d.ip,city:d.city,region:d.region,country:d.country_name,org:d.org
+        })},
+        {url:"https://ipwho.is/?lang="+(lang==="zh"?"cn":""),map:d=>({
+          ip:d.ip,city:d.city,region:d.region,country:d.country,org:d.connection.isp
+        })}
+      ]);
+      renderIPInfo(data);
+      localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}));
+    }catch(e){
+      document.getElementById("loading").textContent=t.err;
+      console.error(e);
+    }
+  }
+
+  /* 顺序尝试多个 API，遇到 429/网络错误自动切换 */
+  async function tryFetchSequence(list){
+    for(const item of list){
+      try{
+        const res=await fetch(item.url);
+        if(res.status===429) throw new Error("429");
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const json=await res.json();
+        return item.map(json);
+      }catch(e){
+        console.warn("API failed:",item.url,e);
+      }
+    }
+    throw new Error("all_api_failed");
+  }
+
+  /* ---------- 渲染 ---------- */
+  function renderIPInfo(d){
+    const el=document.getElementById("ipInfo");
+    el.innerHTML=`
+      <p><strong>${t.ip}:</strong> ${d.ip}</p>
+      <p><strong>${t.city}:</strong> ${d.city||"-"}</p>
+      <p><strong>${t.region}:</strong> ${d.region||"-"}</p>
+      <p><strong>${t.country}:</strong> ${d.country||"-"}</p>
+      <p><strong>${t.org}:</strong> ${d.org||"-"}</p>
+    `;
+    document.getElementById("loading").style.display="none";
+    document.getElementById("content").style.display="";
+  }
+
+  /* ---------- 访客计数 (CounterAPI) ---------- */
+  async function fetchVisits(){
+    const namespace="example.com"; // TODO: 改成自己的
+    const key="visits";
+    try{
+      const res=await fetch(`https://api.counterapi.dev/v1/${namespace}/${key}/up`);
+      if(!res.ok) throw new Error("counter");
+      const data=await res.json();
+      document.getElementById("visits").textContent=
+        `${t.visits}: ${data.count}`;
+    }catch(e){
+      document.getElementById("visits").textContent=
+        `${t.visits}: N/A`;
+    }
+  }
+  fetchVisits();
   </script>
 </body>
 </html>
