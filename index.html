@@ -6,30 +6,66 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>IP Lookup</title>
   <style>
+    /* ---------- 主题变量 ---------- */
     :root{
-      --bg:#f6f8fa;--card:#fff;--primary:#006aff;
-      --text:#333;--border:#e1e4e8;
+      --bg-gradient: linear-gradient(135deg,#74ebd5 0%,#ACB6E5 100%);
+      --card-bg: rgba(255,255,255,0.65);
+      --primary: #006aff;
+      --text:#222;
+      --border:rgba(255,255,255,0.4);
+      --shadow: rgba(0,0,0,0.15);
     }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg-gradient: linear-gradient(135deg,#232526 0%,#414345 100%);
+        --card-bg: rgba(30,30,30,0.6);
+        --text:#eaeaea;
+        --border:rgba(255,255,255,0.1);
+        --shadow: rgba(0,0,0,0.5);
+      }
+    }
+
+    /* ---------- 基础样式 ---------- */
     *{box-sizing:border-box;margin:0;padding:0;
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,
       Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif}
     body{
-      background:var(--bg);color:var(--text);
-      display:flex;align-items:center;justify-content:center;
-      min-height:100vh;padding:1rem
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:var(--bg-gradient);color:var(--text);padding:1.2rem;
+      animation:bgFade 1s ease;
     }
+    @keyframes bgFade{from{opacity:0}to{opacity:1}}
+
+    /* ---------- 卡片 ---------- */
     .card{
-      background:var(--card);border:1px solid var(--border);
-      border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.05);
-      max-width:480px;width:100%;padding:2rem 2.5rem;text-align:center
+      width:100%;max-width:500px;padding:2.2rem 2.6rem;text-align:center;
+      background:var(--card-bg);border:1px solid var(--border);
+      border-radius:20px;backdrop-filter:blur(22px) saturate(160%);
+      -webkit-backdrop-filter:blur(22px) saturate(160%);
+      box-shadow:0 8px 24px var(--shadow);opacity:0;transform:translateY(20px);
+      animation:fadeUp .8s .1s forwards;
     }
-    h1{color:var(--primary);font-size:1.8rem;margin-bottom:1rem}
-    .info{margin:1rem 0;text-align:left;line-height:1.6;word-break:break-all}
-    .info strong{display:inline-block;width:100px}
-    .visits{margin-top:1.5rem;font-weight:bold}
-    footer{margin-top:2rem;font-size:.8rem;color:#777}
+    @keyframes fadeUp{
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    h1{font-size:1.9rem;color:var(--primary);margin-bottom:1.1rem}
+    .info{margin:1.2rem 0;text-align:left;line-height:1.7;word-break:break-all}
+    .info strong{display:inline-block;width:110px}
+    .visits{margin-top:1.6rem;font-weight:600}
+    footer{margin-top:2.4rem;font-size:.85rem;display:flex;flex-direction:column;gap:.4rem;}
+
+    /* ---------- 链接样式 ---------- */
+    .site-link{
+      color:var(--primary);text-decoration:none;font-weight:600;
+      transition:color .25s ease;
+    }
+    .site-link:hover{color:#ff1e96}
+
+    /* ---------- 响应式 ---------- */
     @media(max-width:480px){
-      .card{padding:1.5rem}h1{font-size:1.4rem}
+      .card{padding:1.8rem}
+      h1{font-size:1.55rem}
     }
   </style>
 </head>
@@ -43,7 +79,11 @@
       <div class="visits" id="visits"></div>
     </div>
 
-    <footer><span id="footer-text">Powered by multiple IP APIs & CounterAPI</span></footer>
+    <footer>
+      <span id="footer-text">Powered by multiple IP APIs &amp; CounterAPI</span>
+      <!-- 网站超链接 -->
+      <a href="https://chatgpt.org.uk" target="_blank" rel="noopener" class="site-link">chatgpt.org.uk</a>
+    </footer>
   </div>
 
   <script>
@@ -63,21 +103,21 @@
   const lang=navigator.language.toLowerCase().startsWith("zh")?"zh":"en";
   const t=i18n[lang];
   ["title","loading","footer-text"].forEach(id=>{
-    document.getElementById(id).textContent=t[id.replace("-text","")]||t.loading;
+    const key=id.replace("-text","")||"loading";
+    document.getElementById(id).textContent=t[key];
   });
 
   /* ---------- 本地缓存（5 分钟） ---------- */
   const CACHE_KEY="ip_cache_v1";
-  const CACHE_TTL=5*60*1000; // 5min
-  const now=Date.now();
+  const CACHE_TTL=5*60*1000;
   const cached=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
-  if(cached && now-cached.time<CACHE_TTL){
+  if(cached && Date.now()-cached.time<CACHE_TTL){
     renderIPInfo(cached.data);
   }else{
     fetchIPInfo();
   }
 
-  /* ---------- 获取 IP 信息，带多重源 ---------- */
+  /* ---------- 多重 IP API ---------- */
   async function fetchIPInfo(){
     try{
       const data=await tryFetchSequence([
@@ -85,7 +125,7 @@
           ip:d.ip,city:d.city,region:d.region,country:d.country_name,org:d.org
         })},
         {url:"https://ipwho.is/?lang="+(lang==="zh"?"cn":""),map:d=>({
-          ip:d.ip,city:d.city,region:d.region,country:d.country,org:d.connection.isp
+          ip:d.ip,city:d.city,region:d.region,country:d.country,org:d.connection?.isp
         })}
       ]);
       renderIPInfo(data);
@@ -95,8 +135,6 @@
       console.error(e);
     }
   }
-
-  /* 顺序尝试多个 API，遇到 429/网络错误自动切换 */
   async function tryFetchSequence(list){
     for(const item of list){
       try{
@@ -114,8 +152,7 @@
 
   /* ---------- 渲染 ---------- */
   function renderIPInfo(d){
-    const el=document.getElementById("ipInfo");
-    el.innerHTML=`
+    document.getElementById("ipInfo").innerHTML=`
       <p><strong>${t.ip}:</strong> ${d.ip}</p>
       <p><strong>${t.city}:</strong> ${d.city||"-"}</p>
       <p><strong>${t.region}:</strong> ${d.region||"-"}</p>
@@ -128,7 +165,7 @@
 
   /* ---------- 访客计数 (CounterAPI) ---------- */
   async function fetchVisits(){
-    const namespace="example.com"; // TODO: 改成自己的
+    const namespace="chatgptuk"; // TODO: 改成自己的
     const key="visits";
     try{
       const res=await fetch(`https://api.counterapi.dev/v1/${namespace}/${key}/up`);
@@ -136,7 +173,7 @@
       const data=await res.json();
       document.getElementById("visits").textContent=
         `${t.visits}: ${data.count}`;
-    }catch(e){
+    }catch{
       document.getElementById("visits").textContent=
         `${t.visits}: N/A`;
     }
